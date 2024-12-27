@@ -1,6 +1,6 @@
 from redbot.core import commands
 
-class teamMaker(commands.Cog):
+class teammaker(commands.Cog):
     """teammaker cog"""
 
     def __init__(self, bot):
