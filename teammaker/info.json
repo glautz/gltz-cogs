@@ -1,0 +1,12 @@
+{
+  "author" : ["glautz"],
+  "install_msg" : "Thanks for testing",
+  "name" : "teammaker",
+  "short" : "teammaker",
+  "requirements" : [],
+  "description" : "make a team",
+  "permissions" : [],
+  "end_user_data_statement" : "This cog does not store any End User Data.",
+  "tags" : ["servers", "member", "members", "information"],
+  "min_bot_version": "3.5.0"
+}
