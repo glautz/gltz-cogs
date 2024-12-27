@@ -7,7 +7,7 @@ class teamMaker(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def shuffle(self, ctx):
+    async def teamshuffle(self, ctx):
         """This does stuff!"""
         # Your code will go here
         await ctx.send("I can do stuff!")
