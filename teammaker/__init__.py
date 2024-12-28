@@ -1,5 +1,5 @@
-from .teammaker import teamMaker
+from .mycog import MyCog
 
 
 async def setup(bot):
-    await bot.add_cog(teamMaker(bot))
+    await bot.add_cog(MyCog(bot))
