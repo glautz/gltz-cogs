@@ -1,4 +1,4 @@
-from .mycog import MyCog
+from .teammaker import MyCog
 
 
 async def setup(bot):
