@@ -2,33 +2,65 @@ import random
 from redbot.core import commands
 
 class TeamMaker(commands.Cog):
-    """My custom cog"""
+    """Interactive team maker"""
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
-    async def teamshuffle(self, ctx, *names):
+    async def maketeams(self, ctx):
         """
-        Shuffle 10 names into two teams.
-        Usage: [p]teamshuffle name1 name2 name3 ... name10
+        Interactively create teams.
+        The bot will ask:
+        - number of players
+        - number of teams
+        - names of each player
         """
-        names = list(names)
 
-        if len(names) != 10:
-            await ctx.send("Please provide exactly **10 names**.")
-            return
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
 
-        random.shuffle(names)
+        # Ask for number of players
+        await ctx.send("How many players?")
+        try:
+            msg = await ctx.bot.wait_for("message", timeout=60, check=check)
+            num_players = int(msg.content)
+        except:
+            return await ctx.send("Cancelled or invalid input.")
 
-        team1 = names[:5]
-        team2 = names[5:]
+        # Ask for number of teams
+        await ctx.send("How many teams?")
+        try:
+            msg = await ctx.bot.wait_for("message", timeout=60, check=check)
+            num_teams = int(msg.content)
+        except:
+            return await ctx.send("Cancelled or invalid input.")
 
-        msg = (
-            "**Team 1:**\n" +
-            "\n".join(team1) +
-            "\n\n**Team 2:**\n" +
-            "\n".join(team2)
-        )
+        if num_teams > num_players:
+            return await ctx.send("You cannot have more teams than players.")
 
-        await ctx.send(msg)
+        # Collect player names
+        players = []
+        await ctx.send(f"Please enter **{num_players}** player names, one per message.")
+
+        for i in range(num_players):
+            await ctx.send(f"Name {i+1}:")
+            try:
+                msg = await ctx.bot.wait_for("message", timeout=60, check=check)
+                players.append(msg.content)
+            except:
+                return await ctx.send("Timed out while waiting for names.")
+
+        # Shuffle and split into teams
+        random.shuffle(players)
+        teams = [[] for _ in range(num_teams)]
+
+        for i, player in enumerate(players):
+            teams[i % num_teams].append(player)
+
+        # Build output message
+        output = ""
+        for i, team in enumerate(teams, start=1):
+            output += f"**Team {i}:**\n" + "\n".join(team) + "\n\n"
+
+        await ctx.send(output)
