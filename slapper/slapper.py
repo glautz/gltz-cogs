@@ -14,5 +14,12 @@ class SlapPer(commands.Cog):
         target = user.mention
         await ctx.send(f"{invoker} slaps {target} with a large trout!")
 
+    @commands.hybrid_command(name="slå", description="Slå någon med en fisk.")
+    async def slå(self, ctx, user: discord.Member):
+        invoker = ctx.author.mention
+        target = user.mention
+        await ctx.send(f"{invoker} slog {target} med en fisk!")
+
+
 async def setup(bot: Red):
     await bot.add_cog(SlapPer(bot))
