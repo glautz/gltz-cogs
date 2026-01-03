@@ -2,7 +2,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 import discord
 
-class Slapper(commands.Cog):
+class SlapPer(commands.Cog):
     """Slap command cog."""
 
     def __init__(self, bot: Red):
@@ -15,4 +15,4 @@ class Slapper(commands.Cog):
         await ctx.send(f"{invoker} slaps {target} with a large trout!")
 
 async def setup(bot: Red):
-    await bot.add_cog(Slapper(bot))
+    await bot.add_cog(SlapPer(bot))
