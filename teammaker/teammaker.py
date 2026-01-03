@@ -2,54 +2,64 @@ import random
 from redbot.core import commands
 
 class TeamMaker(commands.Cog):
-    """Interactive team maker"""
+    """Interactive team maker with emoji opt-in"""
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
-    async def maketeams(self, ctx):
+    async def reactteams(self, ctx):
         """
-        Interactively create teams.
-        The bot will ask:
-        - number of players
-        - number of teams
-        - names of each player
+        Create teams by having users react with 👍 to join.
+        Then the bot asks how many teams to make.
         """
 
-        def check(m):
+        def check_author(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
-        # Ask for number of players
-        await ctx.send("How many players?")
-        try:
-            msg = await ctx.bot.wait_for("message", timeout=60, check=check)
-            num_players = int(msg.content)
-        except:
-            return await ctx.send("Cancelled or invalid input.")
-
         # Ask for number of teams
-        await ctx.send("How many teams?")
+        await ctx.send("How many teams do you want?")
         try:
-            msg = await ctx.bot.wait_for("message", timeout=60, check=check)
+            msg = await ctx.bot.wait_for("message", timeout=60, check=check_author)
             num_teams = int(msg.content)
         except:
-            return await ctx.send("Cancelled or invalid input.")
+            return await ctx.send("Invalid input or timed out.")
 
-        if num_teams > num_players:
-            return await ctx.send("You cannot have more teams than players.")
+        if num_teams < 1:
+            return await ctx.send("You need at least 1 team.")
 
-        # Collect player names
+        # Ask users to react to join
+        join_msg = await ctx.send(
+            "React with 👍 to join the game!\n"
+            "You have **30 seconds** to react."
+        )
+        await join_msg.add_reaction("👍")
+
+        # Wait for reactions
+        await ctx.send("Waiting for players to react...")
+
+        await ctx.bot.wait_for("reaction_add", timeout=30, check=lambda r, u: r.message.id == join_msg.id)
+
+        # Fetch updated message with all reactions
+        join_msg = await ctx.channel.fetch_message(join_msg.id)
+
+        # Collect users who reacted
         players = []
-        await ctx.send(f"Please enter **{num_players}** player names, one per message.")
+        for reaction in join_msg.reactions:
+            if reaction.emoji == "👍":
+                users = await reaction.users().flatten()
+                for user in users:
+                    if not user.bot:
+                        players.append(user.name)
 
-        for i in range(num_players):
-            await ctx.send(f"Name {i+1}:")
-            try:
-                msg = await ctx.bot.wait_for("message", timeout=60, check=check)
-                players.append(msg.content)
-            except:
-                return await ctx.send("Timed out while waiting for names.")
+        # Remove duplicates
+        players = list(dict.fromkeys(players))
+
+        if len(players) == 0:
+            return await ctx.send("No players joined.")
+
+        if num_teams > len(players):
+            return await ctx.send("More teams than players is not allowed.")
 
         # Shuffle and split into teams
         random.shuffle(players)
@@ -58,8 +68,8 @@ class TeamMaker(commands.Cog):
         for i, player in enumerate(players):
             teams[i % num_teams].append(player)
 
-        # Build output message
-        output = ""
+        # Build output
+        output = f"**Players joined:** {len(players)}\n\n"
         for i, team in enumerate(teams, start=1):
             output += f"**Team {i}:**\n" + "\n".join(team) + "\n\n"
 
