@@ -1,7 +1,7 @@
 {
   "author" : ["glautz"],
   "install_msg" : "Thanks for testing",
-  "name" : "slapPer",
+  "name" : "slapper",
   "short" : "slap",
   "requirements" : [],
   "description" : "slap someone",
