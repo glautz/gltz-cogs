@@ -35,10 +35,11 @@ class TeamMaker(commands.Cog):
         )
         await join_msg.add_reaction("👍")
 
-        # Wait for reactions
-        await ctx.send("Waiting for players to react...")
-
-        await ctx.bot.wait_for("reaction_add", timeout=30, check=lambda r, u: r.message.id == join_msg.id)
+        # Wait 30 seconds without requiring any reaction event
+        try:
+            await ctx.bot.wait_for("reaction_add", timeout=30, check=lambda r, u: False)
+        except:
+            pass  # We EXPECT a timeout here — this is normal
 
         # Fetch updated message with all reactions
         join_msg = await ctx.channel.fetch_message(join_msg.id)
