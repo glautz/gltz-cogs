@@ -109,7 +109,7 @@ class XKCD(commands.Cog):
 
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
-    @commands.group(name="xkcd")
+    @commands.hybrid_group(name="xkcd")
     async def xkcd_group(self, ctx):
         """XKCD comic posting commands."""
         pass
@@ -127,13 +127,13 @@ class XKCD(commands.Cog):
         else:
             await ctx.send(f"✅ Comic channel set to {channel.mention}, but couldn't fetch current comic number.")
 
-    @xkcd_group.command(name="removechannel")
+    @xkcd_group.hybrid_command(name="removechannel")
     async def remove_channel(self, ctx):
         """Remove the channel for posting XKCD comics."""
         await self.config.guild(ctx.guild).comic_channel.set(None)
         await ctx.send("❌ Comic posting disabled for this server.")
 
-    @xkcd_group.command(name="latest")
+    @xkcd_group.hybrid_command(name="latest")
     async def latest_comic(self, ctx):
         """Post the latest XKCD comic."""
         async with ctx.typing():
@@ -145,7 +145,7 @@ class XKCD(commands.Cog):
             embed = self.create_comic_embed(latest)
             await ctx.send(embed=embed)
 
-    @xkcd_group.command(name="status")
+    @xkcd_group.hybrid_command(name="status")
     async def status(self, ctx):
         """Check the current comic posting status."""
         channel_id = await self.config.guild(ctx.guild).comic_channel()
