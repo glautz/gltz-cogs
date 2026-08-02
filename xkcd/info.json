@@ -1,0 +1,8 @@
+{
+    "author": ["gltz"],
+    "name": "XKCD",
+    "description": "Automatically posts new XKCD comics to a Discord channel when they're released.",
+    "install_msg": "Thanks for installing XKCD! Use `xkcd setchannel <channel>` to start posting comics.",
+    "short": "Posts new XKCD comics",
+    "tags": ["comics", "xkcd", "automation"]
+}
