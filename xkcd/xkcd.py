@@ -88,8 +88,11 @@ class XKCD(commands.Cog):
                             print(f"Error posting comic: {e}")
 
                 # Check interval (default 5 minutes)
-                check_interval = await self.config.all_guilds()
-                await asyncio.sleep(300)  # Check every 5 minutes
+                intervals = [
+                    await self.config.guild(gid).check_interval()
+                    for gid in await self.config.all_guilds()
+                ]
+                await asyncio.sleep(min(intervals) if intervals else 300)
 
             except Exception as e:
                 print(f"Error in comic check task: {e}")
@@ -108,13 +111,13 @@ class XKCD(commands.Cog):
         return embed
 
     @commands.guild_only()
-    @commands.admin_or_permissions(manage_guild=True)
-    @commands.hybrid_group(name="xkcd")
+    @commands.hybrid_group(name="xkcd", fallback="latest")
     async def xkcd_group(self, ctx):
-        """XKCD comic posting commands."""
+        """XKCD commands. Use /xkcd to post the latest comic."""
         pass
 
-    @xkcd_group.command(name="setchannel")
+    @commands.admin_or_permissions(manage_guild=True)
+    @xkcd_group.hybrid_command(name="setchannel")
     async def set_channel(self, ctx, channel: discord.TextChannel):
         """Set the channel where new XKCD comics will be posted."""
         await self.config.guild(ctx.guild).comic_channel.set(channel.id)
@@ -127,6 +130,7 @@ class XKCD(commands.Cog):
         else:
             await ctx.send(f"✅ Comic channel set to {channel.mention}, but couldn't fetch current comic number.")
 
+    @commands.admin_or_permissions(manage_guild=True)
     @xkcd_group.hybrid_command(name="removechannel")
     async def remove_channel(self, ctx):
         """Remove the channel for posting XKCD comics."""
