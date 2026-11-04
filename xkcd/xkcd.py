@@ -110,14 +110,21 @@ class XKCD(commands.Cog):
         embed.set_footer(text=f"Comic #{comic_data.get('num')} - {comic_data.get('date', 'Unknown')}")
         return embed
 
-    @commands.guild_only()
     @commands.hybrid_group(name="xkcd", fallback="latest")
+    @commands.guild_only()
     async def xkcd_group(self, ctx):
-        """XKCD commands. Use /xkcd to post the latest comic."""
-        pass
+        """Post the latest XKCD comic. Typing /xkcd and picking latest runs this."""
+        async with ctx.typing():
+            latest = await self.get_latest_comic()
+            if not latest:
+                await ctx.send("❌ Couldn't fetch the latest comic. Try again later.")
+                return
 
-    @commands.admin_or_permissions(manage_guild=True)
+            embed = self.create_comic_embed(latest)
+            await ctx.send(embed=embed)
+
     @xkcd_group.command(name="setchannel")
+    @commands.admin_or_permissions(manage_guild=True)
     async def set_channel(self, ctx, channel: discord.TextChannel):
         """Set the channel where new XKCD comics will be posted."""
         await self.config.guild(ctx.guild).comic_channel.set(channel.id)
@@ -130,24 +137,12 @@ class XKCD(commands.Cog):
         else:
             await ctx.send(f"✅ Comic channel set to {channel.mention}, but couldn't fetch current comic number.")
 
-    @commands.admin_or_permissions(manage_guild=True)
     @xkcd_group.command(name="removechannel")
+    @commands.admin_or_permissions(manage_guild=True)
     async def remove_channel(self, ctx):
         """Remove the channel for posting XKCD comics."""
         await self.config.guild(ctx.guild).comic_channel.set(None)
         await ctx.send("❌ Comic posting disabled for this server.")
-
-    @xkcd_group.command(name="latest")
-    async def latest_comic(self, ctx):
-        """Post the latest XKCD comic."""
-        async with ctx.typing():
-            latest = await self.get_latest_comic()
-            if not latest:
-                await ctx.send("❌ Couldn't fetch the latest comic. Try again later.")
-                return
-            
-            embed = self.create_comic_embed(latest)
-            await ctx.send(embed=embed)
 
     @xkcd_group.command(name="status")
     async def status(self, ctx):
