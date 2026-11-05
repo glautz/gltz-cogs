@@ -37,6 +37,7 @@ class Streamers(commands.Cog):
         )
         self.session = None
         self.live_check_task = None
+        self._no_creds_warned = False
 
     async def cog_load(self):
         self.session = aiohttp.ClientSession()
@@ -80,6 +81,9 @@ class Streamers(commands.Cog):
     async def get_twitch_live(self, login):
         token = await self.get_twitch_token()
         if not token:
+            if not self._no_creds_warned:
+                self._no_creds_warned = True
+                log.warning("Twitch credentials not set. Use `streamers twitchcreds <client_id> <client_secret>`.")
             return None
         client_id = await self.config.twitch_client_id()
         headers = {"Client-Id": client_id, "Authorization": f"Bearer {token}"}
@@ -257,16 +261,28 @@ class Streamers(commands.Cog):
     @commands.guild_only()
     async def streamers_group(self, ctx):
         """Show the live-notifier status."""
-        channel_id = await self.config.guild(ctx.guild).post_channel()
-        streamers = await self.config.guild(ctx.guild).streamers()
+        conf = self.config.guild(ctx.guild)
+        channel_id = await conf.post_channel()
+        streamers = await conf.streamers()
+        subscribers = await conf.subscribers()
         creds = await self.config.twitch_client_id()
         channel = ctx.guild.get_channel(channel_id) if channel_id else None
-        await ctx.send(
-            "**Streamers status**\n"
-            f"Post channel: {channel.mention if channel else 'not set'}\n"
-            f"Streamers: {len(streamers)}\n"
-            f"Twitch API: {'configured' if creds else 'not set (owner: streamers twitchcreds <id> <secret>)'}"
-        )
+        lines = [
+            "**Streamers status**",
+            f"Post channel: {channel.mention if channel else 'not set (`streamers channel <channel>`!)'}",
+            f"Twitch API: {'configured' if creds else 'not set (owner: `streamers twitchcreds <id> <secret>`!)'}",
+        ]
+        if not streamers:
+            lines.append("No streamers tracked. Add one with `streamers add twitch <login>`.")
+        for key, display in streamers.items():
+            platform, target = key.split(":", 1)
+            if platform == "twitch":
+                live = await self.get_twitch_live(target)
+            else:
+                live = await self.get_youtube_live(target)
+            state = "🔴 LIVE" if live else "offline"
+            lines.append(f"- **{display}** ({platform}): {state} — {len(subscribers.get(key, []))} subscriber(s)")
+        await ctx.send("\n".join(lines))
 
     @streamers_group.command(name="add")
     @commands.admin_or_permissions(manage_guild=True)
@@ -336,6 +352,56 @@ class Streamers(commands.Cog):
         """Set the channel where live announcements are posted."""
         await self.config.guild(ctx.guild).post_channel.set(channel.id)
         await ctx.send(f"✅ Live announcements will be posted in {channel.mention}.")
+
+    @streamers_group.command(name="test")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def test_live(self, ctx, platform: str, target: str):
+        """Post a live announcement in the post channel right now, to test reactions/pings."""
+        platform, target = self.normalize_target(platform, target)
+        if not platform:
+            await ctx.send("❌ Platform must be `twitch` (login) or `youtube` (channel ID, UC...).")
+            return
+        conf = self.config.guild(ctx.guild)
+        key = f"{platform}:{target}"
+        streamers = await conf.streamers()
+        if key not in streamers:
+            await ctx.send(f"❌ {key} is not tracked. Add it with `streamers add` first.")
+            return
+        channel_id = await conf.post_channel()
+        channel = ctx.guild.get_channel(channel_id) if channel_id else None
+        if not channel:
+            await ctx.send("❌ No post channel set. Use `streamers channel <channel>` first.")
+            return
+        if platform == "twitch":
+            live = await self.get_twitch_live(target)
+            if not live:
+                live = {
+                    "id": "test",
+                    "title": "Test live post (not actually live)",
+                    "game": "",
+                    "url": f"https://twitch.tv/{target}",
+                    "thumbnail": "",
+                    "platform": "twitch",
+                }
+        else:
+            live = await self.get_youtube_live(target)
+            if not live:
+                live = {
+                    "id": "test",
+                    "title": "Test live post (not actually live)",
+                    "game": "",
+                    "url": f"https://www.youtube.com/{target}",
+                    "thumbnail": "",
+                    "platform": "youtube",
+                }
+        subs = [uid for uid in (await conf.subscribers()).get(key, []) if ctx.guild.get_member(uid)]
+        content = " ".join(f"<@{uid}>" for uid in subs)
+        embed = await self.create_live_embed(streamers[key], live)
+        msg = await channel.send(content=content or None, embed=embed)
+        posts = {str(msg.id): key, **(await conf.posts())}
+        posts = dict(list(posts.items())[-100:])
+        await conf.posts.set(posts)
+        await ctx.send(f"✅ Posted a test announcement in {channel.mention}. React to it to subscribe for pings.")
 
     @streamers_group.command(name="twitchcreds")
     @commands.is_owner()
