@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 ATOM_NS = "http://www.w3.org/2005/Atom"
 MEDIA_NS = "http://search.org/rss/media/"
 YT_NS = "http://www.youtube.com/xml/schemas/2015"
+LIVE_EMOJI = "✅"
 
 
 class Streamers(commands.Cog):
@@ -156,7 +157,8 @@ class Streamers(commands.Cog):
             embed.add_field(name="Playing", value=live["game"], inline=False)
         if live.get("thumbnail"):
             embed.set_thumbnail(url=live["thumbnail"])
-        embed.set_footer(text="Twitch" if live["platform"] == "twitch" else "YouTube")
+        platform_name = "Twitch" if live["platform"] == "twitch" else "YouTube"
+        embed.set_footer(text=f"{platform_name} · React ✅ on this post to get pinged next time")
         return embed
 
     async def check_live_streams(self):
@@ -199,6 +201,10 @@ class Streamers(commands.Cog):
                         posts = dict(list(posts.items())[-100:])
                         data["posts"] = posts
                         await conf.posts.set(posts)
+                        try:
+                            await msg.add_reaction(LIVE_EMOJI)
+                        except discord.Forbidden:
+                            log.warning("No add_reactions permission in %s", channel.name)
             except Exception:
                 log.exception("Error in live check task")
             await asyncio.sleep(60)
@@ -401,7 +407,11 @@ class Streamers(commands.Cog):
         posts = {str(msg.id): key, **(await conf.posts())}
         posts = dict(list(posts.items())[-100:])
         await conf.posts.set(posts)
-        await ctx.send(f"✅ Posted a test announcement in {channel.mention}. React to it to subscribe for pings.")
+        try:
+            await msg.add_reaction(LIVE_EMOJI)
+        except discord.Forbidden:
+            log.warning("No add_reactions permission in %s", channel.name)
+        await ctx.send(f"✅ Posted a test announcement in {channel.mention}. React ✅ on it to subscribe for pings.")
 
     @streamers_group.command(name="twitchcreds")
     @commands.is_owner()
