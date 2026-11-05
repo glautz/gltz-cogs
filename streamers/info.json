@@ -1,0 +1,9 @@
+{
+    "author": ["gltz"],
+    "name": "Streamers",
+    "description": "Posts when Twitch/YouTube channels go live. React to a live post to get pinged the next time they go live.",
+    "install_msg": "Thanks for installing Streamers! Owner: set Twitch creds with `streamers twitchcreds <client_id> <client_secret>` (app at dev.twitch.tv/console). Admin: add streamers with `streamers add twitch <login>` or `streamers add youtube <UCchannelid>`, set the post channel with `streamers channel <channel>`. Everyone: react to a live post to get pinged next time that streamer goes live.",
+    "short": "Twitch/YouTube live announcements with reaction-based pings.",
+    "tags": ["streamers", "twitch", "youtube", "live", "notifications"],
+    "min_bot_version": "3.5.0"
+}
